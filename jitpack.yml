@@ -1,0 +1,3 @@
+# JitPack configuration
+# JitPack reads this file to build the Android library
+# No action needed — JitPack builds automatically when you push to GitHub
