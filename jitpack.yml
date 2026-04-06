@@ -1,9 +1,4 @@
-# JitPack configuration
-# JitPack reads this file to build the Android library
-# No action needed — JitPack builds automatically when you push to GitHub
 jdk:
   - openjdk11
-before_install:
-  - sdk install gradle 8.0
 install:
-  - cd seers-cmp && ./gradlew publishToMavenLocal
+  - cd seers-cmp && ../gradlew publishToMavenLocal
