@@ -157,7 +157,7 @@ object SeersCMP {
 
     private fun fetchConfig(sdkKey: String): SeersCMPConfig? {
         val urls = listOf(
-            "https://cdn.seersco.com/mobile/configs/$sdkKey.json",
+            "https://cdn.consents.dev/mobile/configs/$sdkKey.json",
             "${config?.cxHost ?: ""}/api/mobile/sdk/config/$sdkKey"
         )
         for (url in urls) {
