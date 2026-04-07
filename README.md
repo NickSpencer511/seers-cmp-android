@@ -18,7 +18,7 @@ dependencyResolutionManagement {
 **Step 2** — Add dependency to your app `build.gradle`:
 ```gradle
 dependencies {
-    implementation 'com.github.NickSpencer511:seers-cmp-android:1.0.0'
+    implementation 'com.github.NickSpencer511:seers-cmp-android:1.0.1'
 }
 ```
 
