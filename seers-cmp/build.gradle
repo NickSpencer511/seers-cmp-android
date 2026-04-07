@@ -3,10 +3,16 @@ apply plugin: 'kotlin-android'
 apply plugin: 'maven-publish'
 
 android {
+    namespace 'ai.seers.cmp'
     compileSdk 34
     defaultConfig {
         minSdk 21
         targetSdk 34
+    }
+    publishing {
+        singleVariant('release') {
+            withSourcesJar()
+        }
     }
 }
 
