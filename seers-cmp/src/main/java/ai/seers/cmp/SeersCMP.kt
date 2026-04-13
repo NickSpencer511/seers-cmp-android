@@ -105,6 +105,45 @@ object SeersCMP {
     }
 
     fun shouldBlock(identifier: String): Boolean = checkBlock(identifier).blocked
+
+    /** Regulation type: "gdpr" | "ccpa" | "none" */
+    val regulation: String get() = lastPayload?.regulation ?: "gdpr"
+    val isGdpr: Boolean get() = regulation == "gdpr"
+    val isCcpa: Boolean get() = regulation == "ccpa"
+    val isNone: Boolean get() = regulation == "none"
+
+    /**
+     * Call BEFORE initialising any third-party SDK.
+     * GDPR (region_selection 1|3) → pre-block until consent given.
+     * CCPA (region_selection 2)   → NOT pre-blocked; block only after explicit opt-out.
+     * none (region_selection 0)   → never block.
+     *
+     * Example:
+     *   if (!SeersCMP.shouldBlockNow("com.google.firebase.analytics")) {
+     *       FirebaseApp.initializeApp(this)
+     *   }
+     */
+    fun shouldBlockNow(identifier: String): Boolean {
+        if (isNone) return false
+        val stored = settingsId?.let { loadConsent(it) }
+        // Consent already given — check per-category
+        if (stored != null && !isExpired(stored)) {
+            return checkBlockWithConsent(identifier, stored)
+        }
+        // No consent yet:
+        return if (isGdpr) checkBlock(identifier).blocked else false
+    }
+
+    private fun checkBlockWithConsent(identifier: String, consent: SeersConsent): Boolean {
+        val result = checkBlock(identifier)
+        if (!result.blocked) return false
+        return when (result.category) {
+            "statistics"  -> !consent.statistics
+            "marketing"   -> !consent.marketing
+            "preferences" -> !consent.preferences
+            else          -> false
+        }
+    }
     fun getConsentMap(): SeersConsentMap = buildConsentMap()
     fun getConsent(): SeersConsent? = settingsId?.let { loadConsent(it) }
     fun saveConsent(value: String, preferences: Boolean, statistics: Boolean, marketing: Boolean) {
@@ -288,13 +327,18 @@ object SeersCMP {
         val host = config?.cxHost ?: return
         try {
             val body = JSONObject().apply {
-                put("sdk_key", sdkKey); put("platform", config?.platform ?: "android")
-                put("consent", consent.value)
+                put("sdk_key",    sdkKey)
+                put("platform",   config?.platform ?: "android")
+                put("consent",    consent.value)
                 put("categories", JSONObject().apply {
-                    put("necessary", consent.necessary); put("preferences", consent.preferences)
-                    put("statistics", consent.statistics); put("marketing", consent.marketing)
+                    put("necessary",   consent.necessary)
+                    put("preferences", consent.preferences)
+                    put("statistics",  consent.statistics)
+                    put("marketing",   consent.marketing)
                 })
-                put("timestamp", consent.timestamp)
+                put("timestamp",   consent.timestamp)
+                appVersion?.let { put("app_version", it) }
+                userEmail?.let  { put("email",       it) }
             }.toString()
             val req = Request.Builder().url("$host/api/mobile/sdk/save-consent")
                 .post(body.toRequestBody("application/json".toMediaType())).build()
@@ -302,8 +346,18 @@ object SeersCMP {
         } catch (e: Exception) {}
     }
 
+    /** Optional: set app version for consent log enrichment.
+     *   SeersCMP.appVersion = BuildConfig.VERSION_NAME */
+    var appVersion: String? = null
+
+    /** Optional: set user email for consent log enrichment.
+     *   SeersCMP.userEmail = "user@example.com" */
+    var userEmail: String? = null
+
     private fun shouldShow(dialogue: SeersCMPDialogue?, region: SeersRegion?): Boolean {
         if (dialogue == null) return false
+        // region_selection=0 → never show banner
+        if (dialogue.regionSelection == 0) return false
         return if (dialogue.regionDetection) region?.eligible == true && region.regulation != "none" else true
     }
 
@@ -314,111 +368,7 @@ object SeersCMP {
     }
 }
 
-// ─────────────────────────────────────────────────────────────
-// SeersBannerView — Native Android banner matching frontend design
-// ─────────────────────────────────────────────────────────────
 
-object SeersBannerView {
-    fun show(activity: Activity, payload: SeersBannerPayload, onDismiss: () -> Unit) {
-        val b   = payload.banner
-        val l   = payload.language
-        val d   = payload.dialogue
-        val tmpl= d?.mobileTemplate ?: "popup"
-
-        val bgColor     = parseColor(b?.bannerBgColor     ?: "#ffffff")
-        val bodyColor   = parseColor(b?.bodyTextColor     ?: "#1a1a1a")
-        val titleColor  = parseColor(b?.titleTextColor    ?: "#1a1a1a")
-        val agreeColor  = parseColor(b?.agreeBtnColor     ?: "#3b6ef8")
-        val agreeText   = parseColor(b?.agreeTextColor    ?: "#ffffff")
-        val declineColor= parseColor(b?.disagreeBtnColor  ?: "#1a1a2e")
-        val declineText = parseColor(b?.disagreeTextColor ?: "#ffffff")
-        val fs          = b?.fontSize?.toFloatOrNull() ?: 14f
-        val btnType     = b?.buttonType ?: "default"
-        val btnRadius   = when { btnType.contains("rounded") -> 50f; btnType.contains("flat") -> 0f; else -> 8f }
-        val allowReject = d?.allowReject ?: true
-        val poweredBy   = d?.poweredBy ?: true
-
-        val bodyText    = l?.body        ?: "We use cookies to personalize content and ads."
-        val titleText   = l?.title       ?: "We use cookies"
-        val btnAgree    = l?.btnAgreeTitle    ?: "Allow All"
-        val btnDecline  = l?.btnDisagreeTitle ?: "Disable All"
-        val btnPref     = l?.btnPreferenceTitle ?: "Cookie settings"
-
-        val ctx = activity
-        val root = activity.window.decorView as ViewGroup
-
-        val container = LinearLayout(ctx).apply {
-            tag = "seers_banner"
-            orientation = LinearLayout.VERTICAL
-            setBackgroundColor(bgColor)
-            val rad = when { tmpl == "dialog" -> 20f; b?.layout == "flat" -> 0f; b?.layout == "rounded" -> 16f; else -> 12f }
-            background = roundedBg(bgColor, rad)
-            elevation = 12f
-            setPadding(dp(ctx, 12), dp(ctx, 12), dp(ctx, 12), dp(ctx, 10))
-        }
-
-        // Body text
-        container.addView(TextView(ctx).apply {
-            text = bodyText; setTextColor(bodyColor); textSize = fs; alpha = 0.9f; lineSpacingMultiplier = 1.5f
-            layoutParams = LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT).apply { bottomMargin = dp(ctx, 7) }
-        })
-
-        // Cookie settings outline button
-        container.addView(makeBtn(ctx, btnPref, Color.TRANSPARENT, bodyColor, fs, btnRadius, true) {
-            root.removeView(container)
-            // TODO: show preference panel
-        }.apply { layoutParams = LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT).apply { bottomMargin = dp(ctx, 5) } })
-
-        // Decline button (if allow_reject)
-        if (allowReject) {
-            container.addView(makeBtn(ctx, btnDecline, declineColor, declineText, fs, btnRadius) {
-                root.removeView(container)
-                SeersCMP.saveConsent("disagree", false, false, false)
-                onDismiss()
-            }.apply { layoutParams = LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT).apply { bottomMargin = dp(ctx, 5) } })
-        }
-
-        // Allow All primary button
-        container.addView(makeBtn(ctx, btnAgree, agreeColor, agreeText, fs, btnRadius) {
-            root.removeView(container)
-            SeersCMP.saveConsent("agree", true, true, true)
-            onDismiss()
-        }.apply { layoutParams = LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT) })
-
-        // Powered by
-        if (poweredBy) {
-            container.addView(TextView(ctx).apply {
-                text = "Powered by Seers"; setTextColor(Color.parseColor("#aaaaaa"))
-                textSize = fs * 0.7f; gravity = Gravity.CENTER
-                layoutParams = LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT).apply { topMargin = dp(ctx, 3) }
-            })
-        }
-
-        val lp = FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.BOTTOM)
-        root.addView(container, lp)
-    }
-
-    private fun makeBtn(ctx: Context, label: String, bg: Int, fg: Int, fs: Float, radius: Float, outline: Boolean = false, onClick: () -> Unit): Button {
-        return Button(ctx).apply {
-            text = label; setTextColor(fg); textSize = fs
-            background = if (outline) outlineBg(fg, radius) else roundedBg(bg, radius)
-            setPadding(dp(ctx, 8), dp(ctx, 5), dp(ctx, 8), dp(ctx, 5))
-            setOnClickListener { onClick() }
-            isAllCaps = false
-        }
-    }
-
-    private fun roundedBg(color: Int, radius: Float) = GradientDrawable().apply {
-        setColor(color); cornerRadius = radius
-    }
-
-    private fun outlineBg(color: Int, radius: Float) = GradientDrawable().apply {
-        setColor(Color.TRANSPARENT); setStroke(3, color); cornerRadius = radius
-    }
-
-    private fun parseColor(hex: String): Int = try { Color.parseColor(hex) } catch (e: Exception) { Color.BLACK }
-    private fun dp(ctx: Context, dp: Int) = (dp * ctx.resources.displayMetrics.density).toInt()
-}
 
 // ─────────────────────────────────────────────────────────────
 // Config Models — added missing language fields
@@ -442,6 +392,7 @@ data class SeersCMPConfig(
 
 data class SeersCMPDialogue(
     @SerializedName("region_detection")  val regionDetection: Boolean = false,
+    @SerializedName("region_selection")  val regionSelection: Int = 1,
     @SerializedName("agreement_expire")  val agreementExpire: Int = 365,
     @SerializedName("default_language")  val defaultLanguage: String? = null,
     @SerializedName("allow_reject")      val allowReject: Boolean = true,
