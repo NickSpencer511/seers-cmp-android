@@ -1,16 +1,12 @@
 package ai.seers.cmp.ui
 
-import android.animation.ValueAnimator
 import android.content.Context
 import android.graphics.Color
 import android.graphics.drawable.Drawable
 import android.graphics.drawable.GradientDrawable
 import android.graphics.drawable.LayerDrawable
-import android.os.Bundle
 import android.view.*
-import android.view.animation.DecelerateInterpolator
 import android.widget.*
-import androidx.core.widget.NestedScrollView
 import ai.seers.cmp.SeersBannerPayload
 import ai.seers.cmp.SeersCMP
 
@@ -164,7 +160,10 @@ class SeersBannerView(
         val lp = LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT,
             if (position == "top") Gravity.TOP else Gravity.BOTTOM)
         addView(container, lp)
-    } — centered modal
+    }
+
+    // ══════════════════════════════════════════
+    // DIALOG — centered modal
     // ══════════════════════════════════════════
     private fun buildDialog() {
         val container = LinearLayout(context).apply {
@@ -198,7 +197,7 @@ class SeersBannerView(
         }
 
         // Scrollable content
-        val scroll = NestedScrollView(context).apply {
+        val scroll = ScrollView(context).apply {
             layoutParams = LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, 0, 1f)
         }
         val content = LinearLayout(context).apply {

@@ -1,5 +1,6 @@
 package ai.seers.cmp
 
+import ai.seers.cmp.ui.SeersBannerView
 import android.app.Activity
 import android.app.Application
 import android.content.Context

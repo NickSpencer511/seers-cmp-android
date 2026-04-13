@@ -41,7 +41,7 @@ afterEvaluate {
                 from components.release
                 groupId = 'com.github.NickSpencer511'
                 artifactId = 'seers-cmp-android'
-                version = '1.0.3'
+                version = '1.0.4'
             }
         }
     }
