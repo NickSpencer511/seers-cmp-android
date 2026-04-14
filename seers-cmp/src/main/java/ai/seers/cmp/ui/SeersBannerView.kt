@@ -107,10 +107,10 @@ class SeersBannerView(
         }
         container.addView(bodyLabel(bodyText, fs, 0.9f))
         container.addView(space(7))
-        container.addView(stkOutline(btnPref) { showPreferences() })
+        container.addView(stkPrimary(btnAgree) { save("agree", true, true, true) })
         container.addView(space(5))
         if (allowReject) { container.addView(stkDark(btnDecline) { save("disagree", false, false, false) }); container.addView(space(5)) }
-        container.addView(stkPrimary(btnAgree) { save("agree", true, true, true) })
+        container.addView(stkOutline(btnPref) { showPreferences() })
         if (poweredBy) { container.addView(space(3)); container.addView(poweredByLabel()) }
 
         val gravity = if (position == "top") Gravity.TOP else Gravity.BOTTOM
@@ -176,10 +176,10 @@ class SeersBannerView(
         container.addView(space(4))
         container.addView(bodyLabel(bodyText, fs, 0.9f))
         container.addView(space(8))
-        container.addView(stkOutline(btnPref) { showPreferences() })
+        container.addView(stkPrimary(btnAgree) { save("agree", true, true, true) })
         container.addView(space(5))
         if (allowReject) { container.addView(stkDark(btnDecline) { save("disagree", false, false, false) }); container.addView(space(5)) }
-        container.addView(stkPrimary(btnAgree) { save("agree", true, true, true) })
+        container.addView(stkOutline(btnPref) { showPreferences() })
 
         val screenW = resources.displayMetrics.widthPixels
         val lp = LayoutParams((screenW * 0.88).toInt(), LayoutParams.WRAP_CONTENT, Gravity.CENTER)
