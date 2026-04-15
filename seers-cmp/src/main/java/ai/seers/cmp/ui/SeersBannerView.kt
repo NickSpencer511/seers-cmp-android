@@ -36,8 +36,17 @@ class SeersBannerView(
     private val prefBorder   = bodyColor // prefFullStyle uses body_text_color
 
     // ── Font size ──
-    private val fs      = b?.fontSize?.toFloatOrNull() ?: 14f
-    private val titleFs = fs + 2f
+    // Scale factor: maps Vue's 190px preview frame to real screen width
+    private val screenWidthDp: Float get() {
+        val dm = resources.displayMetrics
+        return dm.widthPixels / dm.density
+    }
+    private val scale: Float get() = (screenWidthDp / 190f).coerceIn(1f, 2f)
+    private val fs      = (b?.fontSize?.toFloatOrNull() ?: 14f)
+    private val titleFs get() = (fs + 2f) * scale
+    private val catNameFs get() = (fs + 1f) * scale
+    private val catBodyFs get() = (fs - 1f) * scale
+    private val sfs get() = fs * scale  // scaled font size for body/buttons
 
     // ── Button type ──
     private val btnType   = b?.buttonType ?: "default"
@@ -102,16 +111,16 @@ class SeersBannerView(
                 roundedBg(bgColor, containerRadius(), bottomOnly = true)
             else
                 roundedBg(bgColor, containerRadius(), topOnly = true)
-            setPadding(dp(12), dp(12), dp(12), dp(10))
+            setPadding(sdp(12), sdp(12), sdp(12), sdp(12))
             elevation = dp(24f)
         }
-        container.addView(bodyLabel(bodyText, fs, 0.9f))
-        container.addView(space(7))
+        container.addView(bodyLabel(bodyText, sfs, 0.9f))
+        container.addView(space(sdp(7)))
         container.addView(stkPrimary(btnAgree) { save("agree", true, true, true) })
-        container.addView(space(5))
-        if (allowReject) { container.addView(stkDark(btnDecline) { save("disagree", false, false, false) }); container.addView(space(5)) }
+        container.addView(space(sdp(5)))
+        if (allowReject) { container.addView(stkDark(btnDecline) { save("disagree", false, false, false) }); container.addView(space(sdp(5))) }
         container.addView(stkOutline(btnPref) { showPreferences() })
-        if (poweredBy) { container.addView(space(3)); container.addView(poweredByLabel()) }
+        if (poweredBy) { container.addView(space(sdp(3))); container.addView(poweredByLabel()) }
 
         val gravity = if (position == "top") Gravity.TOP else Gravity.BOTTOM
         val lp = LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT, gravity)
@@ -128,20 +137,20 @@ class SeersBannerView(
                 roundedBg(bgColor, containerRadius(), bottomOnly = true)
             else
                 roundedBg(bgColor, containerRadius(), topOnly = true)
-            setPadding(dp(10), dp(10), dp(10), dp(8))
+            setPadding(sdp(12), sdp(12), sdp(12), sdp(12))
             elevation = dp(12f)
         }
         if (showHandle) {
             val handle = View(context).apply {
                 background = roundedBg(Color.parseColor("#cccccc"), dp(2f))
-                layoutParams = LinearLayout.LayoutParams(dp(32), dp(4)).apply { gravity = Gravity.CENTER_HORIZONTAL; bottomMargin = dp(6) }
+                layoutParams = LinearLayout.LayoutParams(sdp(32), sdp(4)).apply { gravity = Gravity.CENTER_HORIZONTAL; bottomMargin = sdp(6) }
             }
             container.addView(handle)
         }
         container.addView(titleLabel(titleText, titleFs))
-        container.addView(space(4))
-        container.addView(bodyLabel(bodyText, fs, 0.9f))
-        container.addView(space(7))
+        container.addView(space(sdp(4)))
+        container.addView(bodyLabel(bodyText, sfs, 0.9f))
+        container.addView(space(sdp(7)))
         // btn-row-primary: [Decline | Accept] side by side
         val row = LinearLayout(context).apply { orientation = LinearLayout.HORIZONTAL }
         if (allowReject) {
@@ -153,9 +162,9 @@ class SeersBannerView(
             layoutParams = LinearLayout.LayoutParams(0, LayoutParams.WRAP_CONTENT, 1f)
         })
         container.addView(row)
-        container.addView(space(4))
+        container.addView(space(sdp(4)))
         container.addView(prefFullBtn(btnPref) { showPreferences() })
-        if (poweredBy) { container.addView(space(3)); container.addView(poweredByLabel()) }
+        if (poweredBy) { container.addView(space(sdp(3))); container.addView(poweredByLabel()) }
 
         val lp = LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT,
             if (position == "top") Gravity.TOP else Gravity.BOTTOM)
@@ -169,16 +178,16 @@ class SeersBannerView(
         val container = LinearLayout(context).apply {
             orientation = LinearLayout.VERTICAL
             background = roundedBg(bgColor, containerRadius())
-            setPadding(dp(12), dp(12), dp(12), dp(12))
+            setPadding(sdp(12), sdp(12), sdp(12), sdp(12))
             elevation = dp(24f)
         }
         container.addView(titleLabel(titleText, titleFs))
-        container.addView(space(4))
-        container.addView(bodyLabel(bodyText, fs, 0.9f))
-        container.addView(space(8))
+        container.addView(space(sdp(4)))
+        container.addView(bodyLabel(bodyText, sfs, 0.9f))
+        container.addView(space(sdp(8)))
         container.addView(stkPrimary(btnAgree) { save("agree", true, true, true) })
-        container.addView(space(5))
-        if (allowReject) { container.addView(stkDark(btnDecline) { save("disagree", false, false, false) }); container.addView(space(5)) }
+        container.addView(space(sdp(5)))
+        if (allowReject) { container.addView(stkDark(btnDecline) { save("disagree", false, false, false) }); container.addView(space(sdp(5))) }
         container.addView(stkOutline(btnPref) { showPreferences() })
 
         val screenW = resources.displayMetrics.widthPixels
@@ -202,38 +211,28 @@ class SeersBannerView(
         }
         val content = LinearLayout(context).apply {
             orientation = LinearLayout.VERTICAL
-            setPadding(dp(10), dp(8), dp(10), dp(6))
+            setPadding(sdp(12), sdp(12), sdp(12), sdp(12))
         }
 
-        // Close button ✕
         content.addView(TextView(context).apply {
-            text = "✕"; setTextColor(titleColor); textSize = fs; typeface = android.graphics.Typeface.DEFAULT_BOLD
+            text = "✕"; setTextColor(titleColor); textSize = sfs; typeface = android.graphics.Typeface.DEFAULT_BOLD
             gravity = Gravity.END
             setOnClickListener { onDismiss() }
-            layoutParams = LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT).apply { bottomMargin = dp(2) }
+            layoutParams = LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT).apply { bottomMargin = sdp(2) }
         })
-
-        // About Our Cookies title
         content.addView(titleLabel(aboutCookies, titleFs))
-        content.addView(space(4))
-
-        // Body
-        content.addView(bodyLabel(bodyText, fs - 1, 0.85f))
-        content.addView(space(4))
-
-        // Read Cookie Policy link
+        content.addView(space(sdp(4)))
+        content.addView(bodyLabel(bodyText, sfs, 0.85f))
+        content.addView(space(sdp(4)))
         content.addView(TextView(context).apply {
-            text = "Read Cookie Policy ↗"; setTextColor(agreeColor); textSize = fs - 2
+            text = "Read Cookie Policy ↗"; setTextColor(agreeColor); textSize = sfs
             paintFlags = paintFlags or android.graphics.Paint.UNDERLINE_TEXT_FLAG
-            layoutParams = LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT).apply { bottomMargin = dp(6) }
+            layoutParams = LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT).apply { bottomMargin = sdp(6) }
         })
-
-        // Allow All
         content.addView(prefActionBtn(btnAgree, agreeColor, agreeText) { save("agree", true, true, true) })
-        content.addView(space(4))
-        // Disable All
+        content.addView(space(sdp(4)))
         content.addView(prefActionBtn(btnDecline, Color.parseColor("#1a1a2e"), Color.WHITE) { save("disagree", false, false, false) })
-        content.addView(space(8))
+        content.addView(space(sdp(8)))
 
         // Categories with divider top
         val catContainer = LinearLayout(context).apply {
@@ -251,11 +250,11 @@ class SeersBannerView(
         // Sticky footer
         val footer = LinearLayout(context).apply {
             orientation = LinearLayout.VERTICAL
-            setPadding(dp(10), dp(6), dp(10), dp(8))
+            setPadding(sdp(12), sdp(12), sdp(12), sdp(12))
             background = topBorderBg(Color.parseColor("#e0e0e0"), bgColor)
             elevation = dp(8f)
         }
-        footer.addView(prefActionBtn(btnSave, agreeColor, agreeText) {
+        footer.addView(prefSaveBtn(btnSave, agreeColor, agreeText) {
             save("custom", toggles["preferences"]!!, toggles["statistics"]!!, toggles["marketing"]!!)
         })
         root.addView(footer)
@@ -269,43 +268,39 @@ class SeersBannerView(
         val wrap = LinearLayout(context).apply {
             orientation = LinearLayout.VERTICAL
             background = borderedBg(Color.parseColor("#e0e0e0"), dp(5f))
-            layoutParams = LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT).apply { bottomMargin = dp(3) }
+            layoutParams = LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT).apply { bottomMargin = sdp(3) }
         }
 
         val row = LinearLayout(context).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
-            setPadding(dp(5), dp(4), dp(5), dp(4))
+            setPadding(sdp(5), sdp(4), sdp(5), sdp(4))
         }
 
-        // Arrow ▶
         val arrow = TextView(context).apply {
-            text = "▶"; setTextColor(agreeColor); textSize = fs * 0.6f
-            layoutParams = LinearLayout.LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT).apply { rightMargin = dp(3) }
+            text = "▶"; setTextColor(agreeColor); textSize = sfs * 0.75f
+            layoutParams = LinearLayout.LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT).apply { rightMargin = sdp(3) }
         }
         row.addView(arrow)
 
-        // Label
         row.addView(TextView(context).apply {
-            text = label; setTextColor(bodyColor); textSize = fs * 0.85f
-            typeface = android.graphics.Typeface.DEFAULT_BOLD
+            text = label; setTextColor(bodyColor); textSize = catNameFs
+            typeface = android.graphics.Typeface.DEFAULT
             layoutParams = LinearLayout.LayoutParams(0, LayoutParams.WRAP_CONTENT, 1f)
         })
 
-        // Always Active or Toggle
         if (isNec) {
             row.addView(TextView(context).apply {
-                text = alwaysActive; setTextColor(agreeColor); textSize = fs * 0.75f
+                text = alwaysActive; setTextColor(agreeColor); textSize = sfs * 0.75f
                 typeface = android.graphics.Typeface.DEFAULT_BOLD
             })
         } else {
             row.addView(buildToggle(key))
         }
 
-        // Description (hidden by default)
         val descView = TextView(context).apply {
-            text = desc; setTextColor(bodyColor); textSize = fs * 0.7f; alpha = 0.8f
-            setPadding(dp(7), dp(3), dp(7), dp(4))
+            text = desc; setTextColor(bodyColor); textSize = catBodyFs; alpha = 0.8f
+            setPadding(sdp(7), sdp(3), sdp(7), sdp(4))
             background = topBorderBg(Color.parseColor("#f0f0f0"), Color.parseColor("#05000000"))
             visibility = View.GONE
             layoutParams = LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT)
@@ -326,7 +321,7 @@ class SeersBannerView(
     private fun buildToggle(key: String): View {
         val togOn = toggles[key] ?: false
         val toggle = FrameLayout(context).apply {
-            layoutParams = LinearLayout.LayoutParams(dp(36), dp(20))
+            layoutParams = LinearLayout.LayoutParams(sdp(36), sdp(20))
         }
         val track = View(context).apply {
             background = roundedBg(if (togOn) agreeColor else Color.parseColor("#cccccc"), dp(10f))
@@ -334,8 +329,8 @@ class SeersBannerView(
         }
         val thumb = View(context).apply {
             background = roundedBg(Color.WHITE, dp(8f))
-            layoutParams = FrameLayout.LayoutParams(dp(16), dp(16), if (togOn) Gravity.END or Gravity.CENTER_VERTICAL else Gravity.START or Gravity.CENTER_VERTICAL).apply {
-                marginStart = dp(2); marginEnd = dp(2)
+            layoutParams = FrameLayout.LayoutParams(sdp(16), sdp(16), if (togOn) Gravity.END or Gravity.CENTER_VERTICAL else Gravity.START or Gravity.CENTER_VERTICAL).apply {
+                marginStart = sdp(2); marginEnd = sdp(2)
             }
         }
         toggle.addView(track); toggle.addView(thumb)
@@ -354,24 +349,29 @@ class SeersBannerView(
     // Button builders
     // ─────────────────────────────────────────────────────────
 
-    private fun stkOutline(label: String, onClick: () -> Unit) = makeBtn(label, Color.TRANSPARENT, prefBorder, outline = true, onClick = onClick)
+    // stk-outline: padding:5px 8px, margin-bottom:5px, border:1.5px, font-weight:700
+    private fun stkOutline(label: String, onClick: () -> Unit) = makeBtn(label, Color.TRANSPARENT, prefBorder, outline = true, marginBottom = 0, onClick = onClick)
     private fun stkDark(label: String, onClick: () -> Unit)    = makeBtn(label, declineColor, declineText, onClick = onClick)
     private fun stkPrimary(label: String, onClick: () -> Unit) = makeBtn(
         label, if (isStroke) Color.TRANSPARENT else agreeColor,
         if (isStroke) agreeColor else agreeText, outline = isStroke, onClick = onClick)
-    private fun btnItem(label: String, bg: Int, fg: Int, onClick: () -> Unit) = makeBtn(label, bg, fg, padV = dp(4), padH = dp(4), fw = 600, onClick = onClick)
-    private fun prefFullBtn(label: String, onClick: () -> Unit) = makeBtn(label, Color.TRANSPARENT, prefBorder, outline = true, padV = dp(4), padH = dp(6), fw = 600, onClick = onClick)
-    private fun prefActionBtn(label: String, bg: Int, fg: Int, onClick: () -> Unit) = makeBtn(label, bg, fg, padV = dp(5), padH = dp(6), radius = dp(4f), onClick = onClick)
+    private fun btnItem(label: String, bg: Int, fg: Int, onClick: () -> Unit) = makeBtn(label, bg, fg, padV = sdp(4), padH = sdp(4), fw = 600, marginBottom = 0, onClick = onClick)
+    private fun prefFullBtn(label: String, onClick: () -> Unit) = makeBtn(label, Color.TRANSPARENT, prefBorder, outline = true, padV = sdp(4), padH = sdp(6), fw = 600, marginBottom = sdp(3), onClick = onClick)
+    private fun prefActionBtn(label: String, bg: Int, fg: Int, onClick: () -> Unit) = makeBtn(label, bg, fg, padV = sdp(4), padH = sdp(6), radius = dp(4f), marginBottom = 0, onClick = onClick)
+    private fun prefSaveBtn(label: String, bg: Int, fg: Int, onClick: () -> Unit) = makeBtn(label, bg, fg, padV = sdp(5), padH = sdp(6), radius = dp(4f), marginBottom = 0, onClick = onClick)
 
     private fun makeBtn(label: String, bg: Int, fg: Int, outline: Boolean = false,
-                        padV: Int = dp(5), padH: Int = dp(8), fw: Int = 700,
+                        padV: Int = sdp(5), padH: Int = sdp(8), fw: Int = 700,
+                        marginBottom: Int = sdp(5),
                         radius: Float = btnRadius, onClick: () -> Unit): Button {
         return Button(context).apply {
-            text = label; setTextColor(fg); textSize = fs; isAllCaps = false
+            text = label; setTextColor(fg); textSize = sfs; isAllCaps = false
             background = if (outline) outlineBg(fg, radius) else roundedBg(bg, radius)
             setPadding(padH, padV, padH, padV)
             typeface = if (fw >= 700) android.graphics.Typeface.DEFAULT_BOLD else android.graphics.Typeface.DEFAULT
-            layoutParams = LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT)
+            layoutParams = LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT).apply {
+                bottomMargin = marginBottom
+            }
             setOnClickListener { onClick() }
         }
     }
@@ -392,13 +392,13 @@ class SeersBannerView(
     }
 
     private fun poweredByLabel() = TextView(context).apply {
-        text = "Powered by Seers"; setTextColor(Color.parseColor("#aaaaaa")); textSize = fs * 0.7f
+        text = "Powered by Seers"; setTextColor(Color.parseColor("#aaaaaa")); textSize = sfs * 0.7f
         gravity = Gravity.CENTER
         layoutParams = LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT)
     }
 
     private fun space(dpVal: Int) = View(context).apply {
-        layoutParams = LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, dp(dpVal))
+        layoutParams = LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, dpVal)
     }
 
     // ─────────────────────────────────────────────────────────
@@ -455,6 +455,8 @@ class SeersBannerView(
     }
 
     private fun c(hex: String): Int = try { Color.parseColor(hex) } catch (e: Exception) { Color.BLACK }
+    private fun sdp(value: Int): Int = (value * scale * resources.displayMetrics.density).toInt()
+    private fun sdp(value: Float): Float = value * scale * resources.displayMetrics.density
     private fun dp(value: Int): Int = (value * resources.displayMetrics.density).toInt()
     private fun dp(value: Float): Float = value * resources.displayMetrics.density
 
