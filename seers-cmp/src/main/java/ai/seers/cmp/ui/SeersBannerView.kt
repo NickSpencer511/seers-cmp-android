@@ -46,7 +46,7 @@ class SeersBannerView(
     // ── Padding scale — modest scale so banner doesn't feel tiny on large screens
     // Uses sqrt of scale to avoid over-scaling (e.g. 360dp phone → scale=1.37 not 1.89)
     private val screenWidthDp: Float get() = resources.displayMetrics.widthPixels / resources.displayMetrics.density
-    private val padScale: Float get() = Math.sqrt((screenWidthDp / 360.0)).toFloat().coerceIn(0.85f, 1.3f)
+    private val padScale: Float get() = kotlin.math.sqrt((screenWidthDp / 360.0)).toFloat().coerceIn(0.85f, 1.3f)
 
     // ── Button type ──
     private val btnType   = b?.buttonType ?: "default"
