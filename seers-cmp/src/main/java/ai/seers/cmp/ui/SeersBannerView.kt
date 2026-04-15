@@ -35,18 +35,18 @@ class SeersBannerView(
     private val declineText  = c(b?.disagreeTextColor ?: "#ffffff")
     private val prefBorder   = bodyColor // prefFullStyle uses body_text_color
 
-    // ── Font size ──
-    // Scale factor: maps Vue's 190px preview frame to real screen width
-    private val screenWidthDp: Float get() {
-        val dm = resources.displayMetrics
-        return dm.widthPixels / dm.density
-    }
-    private val scale: Float get() = (screenWidthDp / 190f).coerceIn(1f, 2f)
-    private val fs      = (b?.fontSize?.toFloatOrNull() ?: 14f)
-    private val titleFs get() = (fs + 2f) * scale
-    private val catNameFs get() = (fs + 1f) * scale
-    private val catBodyFs get() = (fs - 1f) * scale
-    private val sfs get() = fs * scale  // scaled font size for body/buttons
+    // ── Font size ── exact sp from dashboard, no scaling
+    // Android sp already handles screen density correctly
+    private val fs        = b?.fontSize?.toFloatOrNull() ?: 14f
+    private val titleFs   = fs + 2f
+    private val catNameFs = fs + 1f
+    private val catBodyFs = fs - 1f
+    private val sfs       = fs  // alias kept for consistency
+
+    // ── Padding scale — modest scale so banner doesn't feel tiny on large screens
+    // Uses sqrt of scale to avoid over-scaling (e.g. 360dp phone → scale=1.37 not 1.89)
+    private val screenWidthDp: Float get() = resources.displayMetrics.widthPixels / resources.displayMetrics.density
+    private val padScale: Float get() = Math.sqrt((screenWidthDp / 360.0)).toFloat().coerceIn(0.85f, 1.3f)
 
     // ── Button type ──
     private val btnType   = b?.buttonType ?: "default"
@@ -238,7 +238,7 @@ class SeersBannerView(
         val catContainer = LinearLayout(context).apply {
             orientation = LinearLayout.VERTICAL
             setPadding(0, dp(4), 0, 0)
-            background = topBorderBg(Color.parseColor("#e0e0e0"))
+            background = topBorderBg(Color.parseColor("#e0e0e0"), bgColor)
         }
         cats.forEach { (key, label, desc) -> catContainer.addView(buildCatRow(key, label, desc, catContainer)) }
         content.addView(catContainer)
@@ -301,7 +301,7 @@ class SeersBannerView(
         val descView = TextView(context).apply {
             text = desc; setTextColor(bodyColor); textSize = catBodyFs; alpha = 0.8f
             setPadding(sdp(7), sdp(3), sdp(7), sdp(4))
-            background = topBorderBg(Color.parseColor("#f0f0f0"), Color.parseColor("#05000000"))
+            background = topBorderBg(Color.parseColor("#f0f0f0"), bgColor)
             visibility = View.GONE
             layoutParams = LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT)
         }
@@ -320,24 +320,33 @@ class SeersBannerView(
     // ── Toggle switch ──
     private fun buildToggle(key: String): View {
         val togOn = toggles[key] ?: false
+        // Toggle size proportional to font size — matches Vue 22x12px at fs=8
+        val trackW = dp((fs * 2.75f).toInt())
+        val trackH = dp((fs * 1.5f).toInt())
+        val thumbSz = dp((fs * 1.0f).toInt())
+        val thumbMargin = dp(2)
+        val trackRadius = trackH / 2f  // pill shape
+
         val toggle = FrameLayout(context).apply {
-            layoutParams = LinearLayout.LayoutParams(sdp(36), sdp(20))
+            layoutParams = LinearLayout.LayoutParams(trackW, trackH)
         }
         val track = View(context).apply {
-            background = roundedBg(if (togOn) agreeColor else Color.parseColor("#cccccc"), dp(10f))
+            background = roundedBg(if (togOn) agreeColor else Color.parseColor("#cccccc"), trackRadius)
             layoutParams = FrameLayout.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT)
         }
         val thumb = View(context).apply {
-            background = roundedBg(Color.WHITE, dp(8f))
-            layoutParams = FrameLayout.LayoutParams(sdp(16), sdp(16), if (togOn) Gravity.END or Gravity.CENTER_VERTICAL else Gravity.START or Gravity.CENTER_VERTICAL).apply {
-                marginStart = sdp(2); marginEnd = sdp(2)
+            background = roundedBg(Color.WHITE, thumbSz / 2f)
+            layoutParams = FrameLayout.LayoutParams(thumbSz, thumbSz,
+                if (togOn) Gravity.END or Gravity.CENTER_VERTICAL
+                else Gravity.START or Gravity.CENTER_VERTICAL).apply {
+                marginStart = thumbMargin; marginEnd = thumbMargin
             }
         }
         toggle.addView(track); toggle.addView(thumb)
         toggle.setOnClickListener {
             val newVal = !(toggles[key] ?: false)
             toggles[key] = newVal
-            track.background = roundedBg(if (newVal) agreeColor else Color.parseColor("#cccccc"), dp(10f))
+            track.background = roundedBg(if (newVal) agreeColor else Color.parseColor("#cccccc"), trackRadius)
             (thumb.layoutParams as FrameLayout.LayoutParams).gravity =
                 if (newVal) Gravity.END or Gravity.CENTER_VERTICAL else Gravity.START or Gravity.CENTER_VERTICAL
             thumb.requestLayout()
@@ -429,7 +438,7 @@ class SeersBannerView(
     }
 
     private fun borderedBg(borderColor: Int, radius: Float) = GradientDrawable().apply {
-        setColor(Color.WHITE); setStroke(dp(1), borderColor); cornerRadius = radius
+        setColor(bgColor); setStroke(dp(1), borderColor); cornerRadius = radius
     }
 
     /**
@@ -455,8 +464,8 @@ class SeersBannerView(
     }
 
     private fun c(hex: String): Int = try { Color.parseColor(hex) } catch (e: Exception) { Color.BLACK }
-    private fun sdp(value: Int): Int = (value * scale * resources.displayMetrics.density).toInt()
-    private fun sdp(value: Float): Float = value * scale * resources.displayMetrics.density
+    private fun sdp(value: Int): Int = (value * padScale * resources.displayMetrics.density).toInt()
+    private fun sdp(value: Float): Float = value * padScale * resources.displayMetrics.density
     private fun dp(value: Int): Int = (value * resources.displayMetrics.density).toInt()
     private fun dp(value: Float): Float = value * resources.displayMetrics.density
 
