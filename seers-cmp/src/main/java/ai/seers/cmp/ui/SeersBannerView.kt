@@ -1,14 +1,24 @@
 package ai.seers.cmp.ui
 
 import android.content.Context
+import android.graphics.BitmapFactory
 import android.graphics.Color
 import android.graphics.drawable.Drawable
 import android.graphics.drawable.GradientDrawable
 import android.graphics.drawable.LayerDrawable
+import android.os.Handler
+import android.os.Looper
+import android.util.Base64
 import android.view.*
 import android.widget.*
 import ai.seers.cmp.SeersBannerPayload
 import ai.seers.cmp.SeersCMP
+import java.net.URL
+
+private const val DEFAULT_BADGE_BASE64 =
+    "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"
+private const val DEFAULT_LOGO_URL =
+    "https://seers-application-assets.s3.amazonaws.com/images/logo/seersco-logo.png"
 
 /**
  * SeersBannerView — Native Android banner matching Flutter design exactly.
@@ -62,6 +72,11 @@ class SeersBannerView(
     // ── Flags ──
     private val allowReject = d?.allowReject ?: true
     private val poweredBy   = d?.poweredBy   ?: true
+    private val hasBadge    = d?.hasBadge    ?: false
+    private val bannerTimeout = d?.bannerTimeout ?: 0
+    private val showLogo    = (d?.logoStatus ?: "default") != "none"
+    private val logoSrc     = d?.logoLink?.takeIf { it.isNotBlank() } ?: DEFAULT_LOGO_URL
+    private val customBadgeSrc = d?.takeIf { it.badgeStatus == "custom" }?.badgeLink?.takeIf { it.isNotBlank() }
 
     // ── Language ──
     private val bodyText     = l?.body               ?: "We use cookies to personalize content and ads."
@@ -80,19 +95,38 @@ class SeersBannerView(
         Triple("marketing",   l?.marketingTitle  ?: "Marketing",   l?.marketingBody  ?: "Used to track visitors and display relevant advertisements.")
     )
 
-    // Toggle states — preferences starts checked
-    private val toggles = mutableMapOf("preferences" to true, "statistics" to false, "marketing" to false)
+    // Toggle states mirror the backend dialogue defaults.
+    private val toggles = mutableMapOf(
+        "preferences" to (d?.preferencesChecked ?: false),
+        "statistics" to (d?.statisticsChecked ?: false),
+        "marketing" to (d?.targetingChecked ?: false)
+    )
     private val expanded = mutableSetOf<String>()
     private var showPref = false
+    private var bannerVisible = true
+    private var badgeVisible = false
+    private val badgeHandler = Handler(Looper.getMainLooper())
+    private var badgeTimeoutRunnable: Runnable? = null
+    private val defaultBadgeBitmap by lazy {
+        val bytes = Base64.decode(DEFAULT_BADGE_BASE64, Base64.DEFAULT)
+        BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
+    }
 
     init {
-        setBackgroundColor(Color.parseColor("#80000000"))
+        setBackgroundColor(Color.TRANSPARENT)
         build()
     }
 
     private fun build() {
         removeAllViews()
+        val overlayVisible = showPref || bannerVisible
+        setBackgroundColor(Color.TRANSPARENT)
+        isClickable = overlayVisible
+        isFocusable = overlayVisible
+
         if (showPref) { addView(buildPrefPanel()); return }
+        if (badgeVisible && hasBadge) { addView(buildBadgeView()); return }
+        if (!bannerVisible) return
         when (tmpl) {
             "dialog"       -> buildDialog()
             "bottom_sheet" -> buildBottomSheet()
@@ -106,11 +140,7 @@ class SeersBannerView(
     private fun buildPopup() {
         val container = LinearLayout(context).apply {
             orientation = LinearLayout.VERTICAL
-            // position == "top" → round bottom corners; else → round top corners (matches Flutter)
-            background = if (position == "top")
-                roundedBg(bgColor, containerRadius(), bottomOnly = true)
-            else
-                roundedBg(bgColor, containerRadius(), topOnly = true)
+            background = roundedBg(bgColor, popupRadius(), topOnly = true)
             setPadding(sdp(12), sdp(12), sdp(12), sdp(12))
             elevation = dp(24f)
         }
@@ -122,8 +152,7 @@ class SeersBannerView(
         container.addView(stkOutline(btnPref) { showPreferences() })
         if (poweredBy) { container.addView(space(sdp(3))); container.addView(poweredByLabel()) }
 
-        val gravity = if (position == "top") Gravity.TOP else Gravity.BOTTOM
-        val lp = LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT, gravity)
+        val lp = LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT, Gravity.BOTTOM)
         addView(container, lp)
     }
 
@@ -134,9 +163,9 @@ class SeersBannerView(
         val container = LinearLayout(context).apply {
             orientation = LinearLayout.VERTICAL
             background = if (position == "top")
-                roundedBg(bgColor, containerRadius(), bottomOnly = true)
+                roundedBg(bgColor, sheetRadius(), bottomOnly = true)
             else
-                roundedBg(bgColor, containerRadius(), topOnly = true)
+                roundedBg(bgColor, sheetRadius(), topOnly = true)
             setPadding(sdp(12), sdp(12), sdp(12), sdp(12))
             elevation = dp(12f)
         }
@@ -177,7 +206,7 @@ class SeersBannerView(
     private fun buildDialog() {
         val container = LinearLayout(context).apply {
             orientation = LinearLayout.VERTICAL
-            background = roundedBg(bgColor, containerRadius())
+            background = roundedBg(bgColor, dialogRadius())
             setPadding(sdp(12), sdp(12), sdp(12), sdp(12))
             elevation = dp(24f)
         }
@@ -201,8 +230,8 @@ class SeersBannerView(
     private fun buildPrefPanel(): View {
         val root = LinearLayout(context).apply {
             orientation = LinearLayout.VERTICAL
-            background = roundedBg(bgColor, dp(16f), topOnly = true)
-            layoutParams = LayoutParams(LayoutParams.MATCH_PARENT, (resources.displayMetrics.heightPixels * 0.88).toInt(), Gravity.BOTTOM)
+            setBackgroundColor(bgColor)
+            layoutParams = LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT)
         }
 
         // Scrollable content
@@ -214,11 +243,27 @@ class SeersBannerView(
             setPadding(sdp(12), sdp(12), sdp(12), sdp(12))
         }
 
-        content.addView(TextView(context).apply {
-            text = "✕"; setTextColor(titleColor); textSize = sfs; typeface = android.graphics.Typeface.DEFAULT_BOLD
-            gravity = Gravity.END
-            setOnClickListener { onDismiss() }
+        content.addView(LinearLayout(context).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
             layoutParams = LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT).apply { bottomMargin = sdp(2) }
+
+            addView(buildPreferenceLogoView() ?: View(context).apply {
+                layoutParams = LinearLayout.LayoutParams(0, LayoutParams.WRAP_CONTENT, 1f)
+            })
+
+            addView(TextView(context).apply {
+                text = "✕"; setTextColor(titleColor); textSize = sfs; typeface = android.graphics.Typeface.DEFAULT_BOLD
+                gravity = Gravity.END
+                contentDescription = "Close preferences panel"
+                isFocusable = true
+                importantForAccessibility = IMPORTANT_FOR_ACCESSIBILITY_YES
+                setOnClickListener {
+                    showPref = false
+                    build()
+                }
+                layoutParams = LinearLayout.LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT)
+            })
         })
         content.addView(titleLabel(aboutCookies, titleFs))
         content.addView(space(sdp(4)))
@@ -311,6 +356,9 @@ class SeersBannerView(
             if (isOpen) { expanded.remove(key); descView.visibility = View.GONE; arrow.rotation = 0f }
             else { expanded.add(key); descView.visibility = View.VISIBLE; arrow.rotation = 90f }
         }
+        row.contentDescription = "$label. Double tap to expand or collapse details"
+        row.isFocusable = true
+        row.importantForAccessibility = IMPORTANT_FOR_ACCESSIBILITY_YES
 
         wrap.addView(row)
         wrap.addView(descView)
@@ -351,7 +399,118 @@ class SeersBannerView(
                 if (newVal) Gravity.END or Gravity.CENTER_VERTICAL else Gravity.START or Gravity.CENTER_VERTICAL
             thumb.requestLayout()
         }
+        toggle.contentDescription = "Toggle $key cookies"
+        toggle.isFocusable = true
+        toggle.importantForAccessibility = IMPORTANT_FOR_ACCESSIBILITY_YES
         return toggle
+    }
+
+    private fun buildLogoView(): View? {
+        if (!showLogo) return null
+
+        return ImageView(context).apply {
+            adjustViewBounds = true
+            scaleType = ImageView.ScaleType.FIT_CENTER
+            minimumHeight = sdp(24)
+            layoutParams = LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT)
+            loadRemoteImage(this, logoSrc)
+        }
+    }
+
+    private fun buildPreferenceLogoView(): View? {
+        if (!showLogo) return null
+
+        return ImageView(context).apply {
+            adjustViewBounds = true
+            scaleType = ImageView.ScaleType.FIT_START
+            minimumHeight = sdp(24)
+            layoutParams = LinearLayout.LayoutParams(0, LayoutParams.WRAP_CONTENT, 1f)
+            loadRemoteImage(this, logoSrc)
+        }
+    }
+
+    private fun buildBadgeView(): View {
+        val root = FrameLayout(context).apply {
+            layoutParams = LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT)
+        }
+
+        val badge = ImageView(context).apply {
+            adjustViewBounds = true
+            scaleType = ImageView.ScaleType.FIT_CENTER
+            contentDescription = "Open cookie settings"
+            isFocusable = true
+            importantForAccessibility = IMPORTANT_FOR_ACCESSIBILITY_YES
+            layoutParams = LayoutParams(sdp(34), sdp(34), Gravity.START or Gravity.BOTTOM).apply {
+                marginStart = sdp(12)
+                bottomMargin = sdp(12)
+            }
+            setOnClickListener { reopenBannerFromBadge() }
+        }
+
+        loadBadgeImage(badge)
+        root.addView(badge)
+        return root
+    }
+
+    private fun loadBadgeImage(imageView: ImageView) {
+        if (customBadgeSrc != null) {
+            loadRemoteImage(imageView, customBadgeSrc) {
+                imageView.setImageBitmap(defaultBadgeBitmap)
+            }
+            return
+        }
+
+        imageView.setImageBitmap(defaultBadgeBitmap)
+    }
+
+    private fun loadRemoteImage(imageView: ImageView, url: String, onError: (() -> Unit)? = null) {
+        Thread {
+            runCatching {
+                val conn = URL(url).openConnection().apply { connectTimeout = 5000; readTimeout = 5000 }
+                conn.getInputStream().use { BitmapFactory.decodeStream(it) }
+            }.onSuccess { bitmap ->
+                imageView.post {
+                    if (bitmap != null) imageView.setImageBitmap(bitmap) else onError?.invoke()
+                }
+            }.onFailure { imageView.post { onError?.invoke() } }
+        }.start()
+    }
+
+    private fun clearBadgeTimeout() {
+        badgeTimeoutRunnable?.let { badgeHandler.removeCallbacks(it) }
+        badgeTimeoutRunnable = null
+    }
+
+    private fun showBadgeOnly() {
+        clearBadgeTimeout()
+        if (hasBadge) {
+            showPref = false
+            bannerVisible = false
+            badgeVisible = true
+            build()
+            return
+        }
+
+        onDismiss()
+    }
+
+    private fun scheduleBannerTimeout() {
+        if (!hasBadge || bannerTimeout <= 0) return
+        clearBadgeTimeout()
+        badgeTimeoutRunnable = Runnable {
+            showPref = false
+            bannerVisible = false
+            badgeVisible = true
+            build()
+        }.also { badgeHandler.postDelayed(it, bannerTimeout * 1000L) }
+    }
+
+    private fun reopenBannerFromBadge() {
+        clearBadgeTimeout()
+        badgeVisible = false
+        bannerVisible = true
+        build()
+        scheduleBannerTimeout()
     }
 
     // ─────────────────────────────────────────────────────────
@@ -381,6 +540,9 @@ class SeersBannerView(
             layoutParams = LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT).apply {
                 bottomMargin = marginBottom
             }
+            contentDescription = label
+            isFocusable = true
+            importantForAccessibility = IMPORTANT_FOR_ACCESSIBILITY_YES
             setOnClickListener { onClick() }
         }
     }
@@ -414,14 +576,19 @@ class SeersBannerView(
     // Drawing helpers
     // ─────────────────────────────────────────────────────────
 
-    private fun containerRadius(): Float {
-        return when {
-            tmpl == "dialog" -> when { layout == "rounded" -> dp(20f); layout == "flat" -> 0f; else -> dp(10f) }
-            layout == "flat" -> 0f
-            layout == "rounded" -> dp(16f)
-            else -> dp(12f)
-        }
+    private fun dialogRadius(): Float = when {
+        layout == "rounded" -> dp(20f)
+        layout == "flat" -> 0f
+        else -> dp(10f)
     }
+
+    private fun sheetRadius(): Float = when {
+        layout == "flat" -> 0f
+        layout == "rounded" -> dp(16f)
+        else -> dp(14f)
+    }
+
+    private fun popupRadius(): Float = dp(12f)
 
     private fun roundedBg(color: Int, radius: Float, topOnly: Boolean = false, bottomOnly: Boolean = false) = GradientDrawable().apply {
         setColor(color)
@@ -455,12 +622,18 @@ class SeersBannerView(
     }
 
     private fun showPreferences() {
+        clearBadgeTimeout()
         showPref = true; build()
     }
 
     private fun save(value: String, pref: Boolean, stat: Boolean, mkt: Boolean) {
         SeersCMP.saveConsent(value, pref, stat, mkt)
-        onDismiss()
+        showBadgeOnly()
+    }
+
+    override fun onDetachedFromWindow() {
+        clearBadgeTimeout()
+        super.onDetachedFromWindow()
     }
 
     private fun c(hex: String): Int = try { Color.parseColor(hex) } catch (e: Exception) { Color.BLACK }

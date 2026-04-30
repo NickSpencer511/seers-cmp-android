@@ -32,6 +32,8 @@ dependencies {
     implementation 'com.squareup.okhttp3:okhttp:4.12.0'
     implementation 'com.google.code.gson:gson:2.10.1'
     implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3'
+    // EncryptedSharedPreferences — fixes CWE-311 unencrypted consent storage
+    implementation 'androidx.security:security-crypto:1.1.0-alpha06'
 }
 
 afterEvaluate {
@@ -41,7 +43,7 @@ afterEvaluate {
                 from components.release
                 groupId = 'com.github.NickSpencer511'
                 artifactId = 'seers-cmp-android'
-                version = '1.0.0'
+                version = '1.0.1'
             }
         }
     }
