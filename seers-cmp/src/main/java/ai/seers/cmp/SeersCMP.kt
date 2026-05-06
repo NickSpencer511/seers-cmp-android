@@ -221,7 +221,7 @@ object SeersCMP {
     const val SEERS_GOOGLE_DEV_ID = "dNmU0M2"
 
     // Allowlist of trusted Seers hosts — prevents SSRF (CWE-918)
-    private val ALLOWED_HOSTS = setOf("consents.dev", "seers.ai", "seersco.com", "cdn.consents.dev")
+    private val ALLOWED_HOSTS = setOf("consents.dev", "seers.ai", "seersco.com", "cdn.consents.dev", "cdn.seersco.com")
 
     private fun isAllowedHost(urlString: String): Boolean {
         return try {
@@ -398,7 +398,7 @@ object SeersCMP {
     }
 
     private fun fetchConfig(sdkKey: String, ts: Long): SeersCMPConfig? {
-        val url = "https://cdn.consents.dev/mobile/configs/$sdkKey.json?v=$ts"
+        val url = "https://cdn.seersco.com/mobile/configs/$sdkKey.json?v=$ts"
         return try {
             val resp = http.newCall(Request.Builder().url(url).build()).execute()
             when {
@@ -709,7 +709,7 @@ data class SeersCMPConfig(
 
 data class SeersCMPDialogue(
     @SerializedName("region_detection")  val regionDetection: Boolean = false,
-    @SerializedName("region_selection")  val regionSelection: Int = 1,
+    @SerializedName("region_selection")  val regionSelectionRaw: Any? = null,
     @SerializedName("agreement_expire")  val agreementExpire: Int = 365,
     @SerializedName("default_language")  val defaultLanguage: String? = null,
     @SerializedName("preferences_checked") val preferencesChecked: Boolean = false,
@@ -734,7 +734,14 @@ data class SeersCMPDialogue(
     @SerializedName("meta_sdk_consent") val metaSdkConsent: Boolean = false,
     @SerializedName("microsoft_ads_consent") val microsoftAdsConsent: Boolean = false,
     @SerializedName("amazon_ads_consent") val amazonAdsConsent: Boolean = false
-)
+) {
+    val regionSelection: Int get() = when (regionSelectionRaw) {
+        is Double -> regionSelectionRaw.toInt()
+        is Int    -> regionSelectionRaw
+        is String -> regionSelectionRaw.toIntOrNull() ?: 1
+        else      -> 1
+    }
+}
 
 data class SeersCMPBanner(
     @SerializedName("banner_bg_color")        val bannerBgColor: String? = null,
