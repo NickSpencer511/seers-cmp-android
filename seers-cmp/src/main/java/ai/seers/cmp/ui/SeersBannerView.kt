@@ -362,7 +362,7 @@ class SeersBannerView(
 
         val descView = TextView(context).apply {
             text = desc; setTextColor(bodyColor); textSize = prefCatBodyFs; alpha = 0.8f
-            setLineSpacing(0f, 1.42f)
+            setLineSpacing(0f, 1.18f)
             setPadding(sdp(10), sdp(8), sdp(10), sdp(9))
             background = topBorderBg(Color.parseColor("#f0f0f0"), bgColor)
             visibility = View.GONE
@@ -577,13 +577,13 @@ class SeersBannerView(
 
     private fun titleLabel(text: String, size: Float) = TextView(context).apply {
         this.text = text; setTextColor(titleColor); textSize = size
-        typeface = Typeface.create(bannerTypeface, Typeface.BOLD); setLineSpacing(0f, 1.32f)
+        typeface = Typeface.create(bannerTypeface, Typeface.BOLD); setLineSpacing(0f, 1.10f)
         includeFontPadding = false
         layoutParams = LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT)
     }
 
     private fun bodyLabel(text: String, size: Float, alpha: Float = 1f) = TextView(context).apply {
-        this.text = text; setTextColor(bodyColor); textSize = size; this.alpha = alpha; setLineSpacing(0f, 1.42f)
+        this.text = text; setTextColor(bodyColor); textSize = size; this.alpha = alpha; setLineSpacing(0f, 1.18f)
         typeface = Typeface.create(bannerTypeface, Typeface.NORMAL)
         includeFontPadding = false
         layoutParams = LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT)
