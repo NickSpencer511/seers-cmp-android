@@ -577,7 +577,7 @@ class SeersBannerView(
 
     private fun titleLabel(text: String, size: Float) = TextView(context).apply {
         this.text = text; setTextColor(titleColor); textSize = size
-        typeface = Typeface.create(bannerTypeface, Typeface.BOLD); setLineSpacing(0f, 1.10f)
+        typeface = Typeface.create(bannerTypeface, Typeface.BOLD); setLineSpacing(0f, 1.32f)
         includeFontPadding = false
         layoutParams = LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT)
     }
