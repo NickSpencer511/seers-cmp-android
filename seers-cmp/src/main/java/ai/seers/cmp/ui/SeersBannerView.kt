@@ -51,7 +51,7 @@ class SeersBannerView(
     private val titleFs   = fs + 2f
     private val catNameFs = fs + 1f
     private val catBodyFs = fs - 1f
-    private val prefFs        = fs.coerceAtLeast(12f)
+    private val prefFs        = fs
     private val prefTitleFs   = prefFs + 2f
     private val prefCatNameFs = prefFs + 1f
     private val prefCatBodyFs = prefFs - 1f
@@ -335,12 +335,12 @@ class SeersBannerView(
         val row = LinearLayout(context).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
-            minimumHeight = sdp(38)
+            minimumHeight = sdp(40)
             setPadding(sdp(10), sdp(8), sdp(10), sdp(8))
         }
 
         val arrow = TextView(context).apply {
-            text = "▶"; setTextColor(agreeColor); textSize = (prefFs * 0.75f).coerceAtLeast(9f)
+            text = "▶"; setTextColor(agreeColor); textSize = (prefFs * 0.75f)
             layoutParams = LinearLayout.LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT).apply { rightMargin = sdp(6) }
         }
         row.addView(arrow)
@@ -353,7 +353,7 @@ class SeersBannerView(
 
         if (isNec) {
             row.addView(TextView(context).apply {
-                text = alwaysActive; setTextColor(agreeColor); textSize = prefFs * 0.85f
+                text = alwaysActive; setTextColor(agreeColor); textSize = prefCatBodyFs
                 typeface = Typeface.create(bannerTypeface, Typeface.BOLD)
             })
         } else {
@@ -362,6 +362,7 @@ class SeersBannerView(
 
         val descView = TextView(context).apply {
             text = desc; setTextColor(bodyColor); textSize = prefCatBodyFs; alpha = 0.8f
+            setLineSpacing(0f, 1.42f)
             setPadding(sdp(10), sdp(8), sdp(10), sdp(9))
             background = topBorderBg(Color.parseColor("#f0f0f0"), bgColor)
             visibility = View.GONE
@@ -539,21 +540,22 @@ class SeersBannerView(
     private fun stkPrimary(label: String, onClick: () -> Unit) = makeBtn(
         label, if (isStroke) Color.TRANSPARENT else agreeColor,
         if (isStroke) agreeColor else agreeText, outline = isStroke, onClick = onClick)
-    private fun btnItem(label: String, bg: Int, fg: Int, onClick: () -> Unit) = makeBtn(label, bg, fg, padV = sdp(4), padH = sdp(4), fw = 600, marginBottom = 0, onClick = onClick)
-    private fun prefFullBtn(label: String, onClick: () -> Unit) = makeBtn(label, Color.TRANSPARENT, prefBorder, outline = true, padV = sdp(4), padH = sdp(6), fw = 600, marginBottom = sdp(3), onClick = onClick)
-    private fun prefActionBtn(label: String, bg: Int, fg: Int, textSize: Float = sfs, onClick: () -> Unit) = makeBtn(label, bg, fg, padV = sdp(6), padH = sdp(10), radius = dp(6f), marginBottom = 0, textSize = textSize, onClick = onClick)
-    private fun prefSaveBtn(label: String, bg: Int, fg: Int, onClick: () -> Unit) = makeBtn(label, bg, fg, padV = sdp(7), padH = sdp(10), radius = dp(6f), marginBottom = 0, textSize = prefFs, onClick = onClick)
+    private fun btnItem(label: String, bg: Int, fg: Int, onClick: () -> Unit) = makeBtn(label, bg, fg, padV = sdp(5), padH = sdp(8), fw = 600, minBtnHeight = sdp(32), marginBottom = 0, onClick = onClick)
+    private fun prefFullBtn(label: String, onClick: () -> Unit) = makeBtn(label, Color.TRANSPARENT, prefBorder, outline = true, padV = sdp(5), padH = sdp(8), fw = 600, minBtnHeight = sdp(32), marginBottom = sdp(3), onClick = onClick)
+    private fun prefActionBtn(label: String, bg: Int, fg: Int, textSize: Float = sfs, onClick: () -> Unit) = makeBtn(label, bg, fg, padV = sdp(7), padH = sdp(10), radius = dp(6f), minBtnHeight = sdp(36), marginBottom = 0, textSize = textSize, onClick = onClick)
+    private fun prefSaveBtn(label: String, bg: Int, fg: Int, onClick: () -> Unit) = makeBtn(label, bg, fg, padV = sdp(7), padH = sdp(10), radius = dp(6f), minBtnHeight = sdp(38), marginBottom = 0, textSize = prefFs, onClick = onClick)
 
     private fun makeBtn(label: String, bg: Int, fg: Int, outline: Boolean = false,
                         padV: Int = sdp(5), padH: Int = sdp(8), fw: Int = 700,
                         marginBottom: Int = sdp(5),
-                        radius: Float = btnRadius, textSize: Float = sfs, onClick: () -> Unit): Button {
+                        radius: Float = btnRadius, textSize: Float = sfs,
+                        minBtnHeight: Int = sdp(32), onClick: () -> Unit): Button {
         return Button(context).apply {
             text = label; setTextColor(fg); this.textSize = textSize; isAllCaps = false
             background = if (outline) outlineBg(fg, radius) else roundedBg(bg, radius)
             setPadding(padH, padV, padH, padV)
-            minHeight = 0
-            minimumHeight = 0
+            minHeight = minBtnHeight
+            minimumHeight = minBtnHeight
             minWidth = 0
             minimumWidth = 0
             includeFontPadding = false
@@ -575,13 +577,13 @@ class SeersBannerView(
 
     private fun titleLabel(text: String, size: Float) = TextView(context).apply {
         this.text = text; setTextColor(titleColor); textSize = size
-        typeface = Typeface.create(bannerTypeface, Typeface.BOLD); setLineSpacing(0f, 1.3f)
+        typeface = Typeface.create(bannerTypeface, Typeface.BOLD); setLineSpacing(0f, 1.32f)
         includeFontPadding = false
         layoutParams = LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT)
     }
 
     private fun bodyLabel(text: String, size: Float, alpha: Float = 1f) = TextView(context).apply {
-        this.text = text; setTextColor(bodyColor); textSize = size; this.alpha = alpha; setLineSpacing(0f, 1.5f)
+        this.text = text; setTextColor(bodyColor); textSize = size; this.alpha = alpha; setLineSpacing(0f, 1.42f)
         typeface = Typeface.create(bannerTypeface, Typeface.NORMAL)
         includeFontPadding = false
         layoutParams = LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT)
