@@ -754,6 +754,7 @@ data class SeersCMPBanner(
     @SerializedName("title_text_color")       val titleTextColor: String? = null,
     @SerializedName("body_text_color")        val bodyTextColor: String? = null,
     @SerializedName("font_size")              val fontSize: String? = null,
+    @SerializedName("font_style")             val fontStyle: String? = null,
     @SerializedName("button_type")            val buttonType: String? = null,
     @SerializedName("layout")                 val layout: String? = null,
     @SerializedName("position")               val position: String? = null

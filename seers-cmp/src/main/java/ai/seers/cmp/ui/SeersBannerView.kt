@@ -3,6 +3,7 @@ package ai.seers.cmp.ui
 import android.content.Context
 import android.graphics.BitmapFactory
 import android.graphics.Color
+import android.graphics.Typeface
 import android.graphics.drawable.Drawable
 import android.graphics.drawable.GradientDrawable
 import android.graphics.drawable.LayerDrawable
@@ -45,18 +46,28 @@ class SeersBannerView(
     private val declineText  = c(b?.disagreeTextColor ?: "#ffffff")
     private val prefBorder   = bodyColor // prefFullStyle uses body_text_color
 
-    // ── Font size ── exact sp from dashboard, no scaling
-    // Android sp already handles screen density correctly
-    private val fs        = b?.fontSize?.toFloatOrNull() ?: 14f
+    // ── Font size ── respect the dashboard mobile visual size, without phone-width scaling.
+    private val fs        = (b?.fontSize?.toFloatOrNull() ?: 12f).coerceIn(10f, 16f)
     private val titleFs   = fs + 2f
     private val catNameFs = fs + 1f
     private val catBodyFs = fs - 1f
+    private val prefFs        = fs.coerceAtLeast(12f)
+    private val prefTitleFs   = prefFs + 2f
+    private val prefCatNameFs = prefFs + 1f
+    private val prefCatBodyFs = prefFs - 1f
     private val sfs       = fs  // alias kept for consistency
+    private val fontFamily = b?.fontStyle?.lowercase()?.trim().orEmpty()
+    private val bannerTypeface: Typeface = when (fontFamily) {
+        "serif" -> Typeface.SERIF
+        "monospace" -> Typeface.MONOSPACE
+        "cursive" -> Typeface.create("casual", Typeface.NORMAL)
+        "fantasy" -> Typeface.create("fantasy", Typeface.NORMAL)
+        "arial", "inter", "spezia", "sans-serif" -> Typeface.SANS_SERIF
+        else -> Typeface.DEFAULT
+    }
 
-    // ── Padding scale — modest scale so banner doesn't feel tiny on large screens
-    // Uses sqrt of scale to avoid over-scaling (e.g. 360dp phone → scale=1.37 not 1.89)
-    private val screenWidthDp: Float get() = resources.displayMetrics.widthPixels / resources.displayMetrics.density
-    private val padScale: Float get() = kotlin.math.sqrt((screenWidthDp / 360.0)).toFloat().coerceIn(0.85f, 1.3f)
+    // ── Padding scale ── keep CSS-like spacing from the Vue preview.
+    private val padScale: Float get() = 1f
 
     // ── Button type ──
     private val btnType   = b?.buttonType ?: "default"
@@ -230,8 +241,12 @@ class SeersBannerView(
     private fun buildPrefPanel(): View {
         val root = LinearLayout(context).apply {
             orientation = LinearLayout.VERTICAL
-            setBackgroundColor(bgColor)
-            layoutParams = LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT)
+            background = roundedBg(bgColor, dp(18f), topOnly = true)
+            layoutParams = LayoutParams(
+                LayoutParams.MATCH_PARENT,
+                (resources.displayMetrics.heightPixels * 0.92f).toInt(),
+                Gravity.BOTTOM
+            )
         }
 
         // Scrollable content
@@ -253,7 +268,7 @@ class SeersBannerView(
             })
 
             addView(TextView(context).apply {
-                text = "✕"; setTextColor(titleColor); textSize = sfs; typeface = android.graphics.Typeface.DEFAULT_BOLD
+                text = "✕"; setTextColor(titleColor); textSize = prefFs; typeface = Typeface.create(bannerTypeface, Typeface.BOLD)
                 gravity = Gravity.END
                 contentDescription = "Close preferences panel"
                 isFocusable = true
@@ -265,18 +280,19 @@ class SeersBannerView(
                 layoutParams = LinearLayout.LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT)
             })
         })
-        content.addView(titleLabel(aboutCookies, titleFs))
+        content.addView(titleLabel(aboutCookies, prefTitleFs))
         content.addView(space(sdp(4)))
-        content.addView(bodyLabel(bodyText, sfs, 0.85f))
+        content.addView(bodyLabel(bodyText, prefFs, 0.85f))
         content.addView(space(sdp(4)))
         content.addView(TextView(context).apply {
-            text = "Read Cookie Policy ↗"; setTextColor(agreeColor); textSize = sfs
+            text = "Read Cookie Policy ↗"; setTextColor(agreeColor); textSize = prefFs
+            typeface = Typeface.create(bannerTypeface, Typeface.BOLD)
             paintFlags = paintFlags or android.graphics.Paint.UNDERLINE_TEXT_FLAG
             layoutParams = LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT).apply { bottomMargin = sdp(6) }
         })
-        content.addView(prefActionBtn(btnAgree, agreeColor, agreeText) { save("agree", true, true, true) })
+        content.addView(prefActionBtn(btnAgree, agreeColor, agreeText, prefFs) { save("agree", true, true, true) })
         content.addView(space(sdp(4)))
-        content.addView(prefActionBtn(btnDecline, Color.parseColor("#1a1a2e"), Color.WHITE) { save("disagree", false, false, false) })
+        content.addView(prefActionBtn(btnDecline, Color.parseColor("#1a1a2e"), Color.WHITE, prefFs) { save("disagree", false, false, false) })
         content.addView(space(sdp(8)))
 
         // Categories with divider top
@@ -319,33 +335,34 @@ class SeersBannerView(
         val row = LinearLayout(context).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
-            setPadding(sdp(5), sdp(4), sdp(5), sdp(4))
+            minimumHeight = sdp(38)
+            setPadding(sdp(10), sdp(8), sdp(10), sdp(8))
         }
 
         val arrow = TextView(context).apply {
-            text = "▶"; setTextColor(agreeColor); textSize = sfs * 0.75f
-            layoutParams = LinearLayout.LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT).apply { rightMargin = sdp(3) }
+            text = "▶"; setTextColor(agreeColor); textSize = (prefFs * 0.75f).coerceAtLeast(9f)
+            layoutParams = LinearLayout.LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT).apply { rightMargin = sdp(6) }
         }
         row.addView(arrow)
 
         row.addView(TextView(context).apply {
-            text = label; setTextColor(bodyColor); textSize = catNameFs
-            typeface = android.graphics.Typeface.DEFAULT
+            text = label; setTextColor(bodyColor); textSize = prefCatNameFs
+            typeface = Typeface.create(bannerTypeface, Typeface.NORMAL)
             layoutParams = LinearLayout.LayoutParams(0, LayoutParams.WRAP_CONTENT, 1f)
         })
 
         if (isNec) {
             row.addView(TextView(context).apply {
-                text = alwaysActive; setTextColor(agreeColor); textSize = sfs * 0.75f
-                typeface = android.graphics.Typeface.DEFAULT_BOLD
+                text = alwaysActive; setTextColor(agreeColor); textSize = prefFs * 0.85f
+                typeface = Typeface.create(bannerTypeface, Typeface.BOLD)
             })
         } else {
             row.addView(buildToggle(key))
         }
 
         val descView = TextView(context).apply {
-            text = desc; setTextColor(bodyColor); textSize = catBodyFs; alpha = 0.8f
-            setPadding(sdp(7), sdp(3), sdp(7), sdp(4))
+            text = desc; setTextColor(bodyColor); textSize = prefCatBodyFs; alpha = 0.8f
+            setPadding(sdp(10), sdp(8), sdp(10), sdp(9))
             background = topBorderBg(Color.parseColor("#f0f0f0"), bgColor)
             visibility = View.GONE
             layoutParams = LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT)
@@ -368,10 +385,9 @@ class SeersBannerView(
     // ── Toggle switch ──
     private fun buildToggle(key: String): View {
         val togOn = toggles[key] ?: false
-        // Toggle size proportional to font size — matches Vue 22x12px at fs=8
-        val trackW = dp((fs * 2.75f).toInt())
-        val trackH = dp((fs * 1.5f).toInt())
-        val thumbSz = dp((fs * 1.0f).toInt())
+        val trackW = dp(36)
+        val trackH = dp(20)
+        val thumbSz = dp(16)
         val thumbMargin = dp(2)
         val trackRadius = trackH / 2f  // pill shape
 
@@ -525,18 +541,24 @@ class SeersBannerView(
         if (isStroke) agreeColor else agreeText, outline = isStroke, onClick = onClick)
     private fun btnItem(label: String, bg: Int, fg: Int, onClick: () -> Unit) = makeBtn(label, bg, fg, padV = sdp(4), padH = sdp(4), fw = 600, marginBottom = 0, onClick = onClick)
     private fun prefFullBtn(label: String, onClick: () -> Unit) = makeBtn(label, Color.TRANSPARENT, prefBorder, outline = true, padV = sdp(4), padH = sdp(6), fw = 600, marginBottom = sdp(3), onClick = onClick)
-    private fun prefActionBtn(label: String, bg: Int, fg: Int, onClick: () -> Unit) = makeBtn(label, bg, fg, padV = sdp(4), padH = sdp(6), radius = dp(4f), marginBottom = 0, onClick = onClick)
-    private fun prefSaveBtn(label: String, bg: Int, fg: Int, onClick: () -> Unit) = makeBtn(label, bg, fg, padV = sdp(5), padH = sdp(6), radius = dp(4f), marginBottom = 0, onClick = onClick)
+    private fun prefActionBtn(label: String, bg: Int, fg: Int, textSize: Float = sfs, onClick: () -> Unit) = makeBtn(label, bg, fg, padV = sdp(6), padH = sdp(10), radius = dp(6f), marginBottom = 0, textSize = textSize, onClick = onClick)
+    private fun prefSaveBtn(label: String, bg: Int, fg: Int, onClick: () -> Unit) = makeBtn(label, bg, fg, padV = sdp(7), padH = sdp(10), radius = dp(6f), marginBottom = 0, textSize = prefFs, onClick = onClick)
 
     private fun makeBtn(label: String, bg: Int, fg: Int, outline: Boolean = false,
                         padV: Int = sdp(5), padH: Int = sdp(8), fw: Int = 700,
                         marginBottom: Int = sdp(5),
-                        radius: Float = btnRadius, onClick: () -> Unit): Button {
+                        radius: Float = btnRadius, textSize: Float = sfs, onClick: () -> Unit): Button {
         return Button(context).apply {
-            text = label; setTextColor(fg); textSize = sfs; isAllCaps = false
+            text = label; setTextColor(fg); this.textSize = textSize; isAllCaps = false
             background = if (outline) outlineBg(fg, radius) else roundedBg(bg, radius)
             setPadding(padH, padV, padH, padV)
-            typeface = if (fw >= 700) android.graphics.Typeface.DEFAULT_BOLD else android.graphics.Typeface.DEFAULT
+            minHeight = 0
+            minimumHeight = 0
+            minWidth = 0
+            minimumWidth = 0
+            includeFontPadding = false
+            stateListAnimator = null
+            typeface = Typeface.create(bannerTypeface, if (fw >= 700) Typeface.BOLD else Typeface.NORMAL)
             layoutParams = LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT).apply {
                 bottomMargin = marginBottom
             }
@@ -553,18 +575,23 @@ class SeersBannerView(
 
     private fun titleLabel(text: String, size: Float) = TextView(context).apply {
         this.text = text; setTextColor(titleColor); textSize = size
-        typeface = android.graphics.Typeface.DEFAULT_BOLD; setLineSpacing(0f, 1.3f)
+        typeface = Typeface.create(bannerTypeface, Typeface.BOLD); setLineSpacing(0f, 1.3f)
+        includeFontPadding = false
         layoutParams = LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT)
     }
 
     private fun bodyLabel(text: String, size: Float, alpha: Float = 1f) = TextView(context).apply {
         this.text = text; setTextColor(bodyColor); textSize = size; this.alpha = alpha; setLineSpacing(0f, 1.5f)
+        typeface = Typeface.create(bannerTypeface, Typeface.NORMAL)
+        includeFontPadding = false
         layoutParams = LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT)
     }
 
     private fun poweredByLabel() = TextView(context).apply {
         text = "Powered by Seers"; setTextColor(Color.parseColor("#aaaaaa")); textSize = sfs * 0.7f
+        typeface = Typeface.create(bannerTypeface, Typeface.NORMAL)
         gravity = Gravity.CENTER
+        includeFontPadding = false
         layoutParams = LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT)
     }
 
